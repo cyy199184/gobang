@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋</title>
+    <style type="text/css">
+        canvas{
+            display: block;
+            margin: 50px auto; /*居中,外边距为50px*/
+            border: 1px solid #333;
+            background-image: url("mages/u=3297281237\,3662826774&fm=26&gp=0.jpg");
+            /* background-position: center center; */
+        }
+ 
+    </style>
+</head>
+<body> 
+    <h1 align="center">五子棋 - 初级模式</h1>
+    <canvas width="450" height="450"></canvas>
+    <script type="text/javascript">
+        let myCanvas = document.querySelector('canvas'); //设置画布大小。如果不给 <canvas> 设置 widht、height 属性时，则默认 width为300、height 为 150，单位都是 px。也可以使用 css 属性来设置宽高，但是如宽高属性和初始比例不一致，他会出现扭曲。所以，建议永远不要使用 css 属性来设置 <canvas> 的宽高。
+        let ctx = myCanvas.getContext('2d');//2d渲染。获取这个元素的context——图像稍后将在此被渲染.
+
+        //声明创建一个变量来表示格子的大小
+        let gridSize = 30;
+
+        //创建一个变量来表示该谁落子
+        let isWho = true;      //如果为true表示黑棋落子，反之为白棋落子
+
+        //创建一个变量来表示游戏是否结束
+        let game_over = false;
+
+        //创建一个变量来存储整个棋盘的落子情况,储存0，1，2
+        let checkerboard=[]; //checkerboard是棋盘的意思
+        //给这个数组创建15行
+        for(let row = 0; row < 15; row = row + 1){ //row是行的意思
+            checkerboard[row] = [];                                    ////每个值再声明一个一维数组，这样就组成了一个二维数组
+            //给这一行创建15列                                                                                              
+            for(let col = 0;col < 15; col = col + 1){ //col 列
+                checkerboard[row][col] = 0;       //给每一行每一列设置一个初始值为0
+            }
+
+        }
+
+        //为了之后落子的方便显示，将棋盘四边向内缩格子的一半
+
+        //绘制横线 
+        for(let i=0;i<myCanvas.height/gridSize;i=i+1){
+            ctx.beginPath(); //ctx是一个极简的上下文解析器,
+            ctx.moveTo(0+15,gridSize*i+15); //每个y轴的起始位置，移动到某个位置,首先开始是0，0的位置
+            ctx.lineTo(myCanvas.width-15,gridSize*i+15); //绘制直线，Y轴不变，X轴占据全部
+            ctx.stroke();// 描边。连线。。绘制一条路径，形状是绿色的字母 L。
+        }
+
+        //绘制竖线 
+        for(let i=0;i<myCanvas.width/gridSize;i=i+1){
+            ctx.beginPath(); //ctx是一个极简的上下文解析器,
+            ctx.moveTo(gridSize*i+15,0+15); //每个y轴的起始位置，移动到某个位置,首先开始是0，0的位置
+            ctx.lineTo(gridSize*i+15,myCanvas.height-15); //绘制直线，Y轴不变，X轴占据全部
+            ctx.stroke();//绘制一条路径，形状是绿色的字母 L：
+        }
+
+        //创建一个变量来表示当前一共有多少种赢法
+        let count = 0;   //count一共有572种赢法。
+        //创建一个变量来表示赢法
+        let wins = [];
+        //在赢法中设置行列
+        for(let row = 0; row < 15; row = row +1){
+            //创建15行
+            wins[row]=[];
+            for(let col = 0; col<15; col=col+1){
+                //每一行创建15列
+                wins[row][col]=[];
+            }
+        }
+
+        //水平方向的赢法统计
+        for(let row = 0; row < 15; row = row + 1){           //获取行数
+            for(let col = 0; col < 11; col = col + 1){      //获取当前行的列数    0-15取10-14
+                for(let k = 0; k < 5; k = k + 1){           //数5颗棋子
+                    wins[row][col+k][count] = true;           //当前这个位置设置为true，表示这是一种赢法。 count是统计
+                    /*
+                        row     col     count
+                        0       0       0
+                        0       0+1     0
+                        0       0+2     0
+                        0       0+3     0
+                        0       0+4     0
+
+                        0       1       1
+                        0       2       1
+                        0       3       1
+                        0       4       1
+                        0       5       1
+                    */
+                }
+                //每数一次，赢法加一
+                count = count + 1;
+            }    
+        }
+
+        //竖直方向的赢法统计
+        for(let row = 0; row <11; row = row + 1){
+            for(let col = 0; col < 15; col = col + 1){
+                for(let k = 0; k < 5; k = k + 1){
+                    wins[row + k][col][count] = true;
+                }
+                count = count + 1;
+            }
+        }
+
+        //正斜线方向的赢法统计
+        for(let row = 14; row > 3; row = row - 1){
+            for(let col = 0; col < 11; col = col + 1){
+                for(let k = 0; k < 5; k = k + 1){
+                    wins[row - k][col + k][count] = true;
+                }
+                count = count + 1;
+            }
+        }
+
+        //反斜线方向的赢法统计
+        for(let row = 0; row < 11; row = row + 1){
+            for(let col = 0; col < 11; col = col + 1){
+                for(let k = 0; k < 5; k = k + 1){
+                    wins[row + k][col + k][count] = true;    //横变大，列变小
+                }
+                count = count + 1;
+            }
+        }
+        //给黑棋和白棋分别创建变量来表示这一种赢法上的棋子数
+        let playerWins = [];
+        let computerWins = [];
+        //分别给每一种赢法棋子数设置初始值：0
+        for(let k = 0; k < count; k = k + 1){
+            playerWins[k] = 0;
+            computerWins[k] = 0;
+        }
+
+        // 定义棋子颜色及落子位置，y表示行数，x表示列数 ，a，b表示棋子中心坐标
+        function drawChess(y,x){ //定义一个函数：绘制棋子x,y坐标  //此时的X,Y表示棋盘上的坐标    //y在前面表示第几行,x在后面表示第几列 //x,y可以是整数，例如5行3列。
+            if(game_over){
+                alert("游戏结束，无法落子，请重新开始");
+                return ; //强制结束，不能落子
+            }
+            //判断这个位置是否有棋子
+            if(checkerboard[y][x] !== 0){
+                alert("该位置已经有棋子了，请重新落子");  //alert是弹窗代码 。alert() 方法用于显示带有一条指定消息和一个 OK 按钮的警告框。
+                return;     //return:强制结束当前的函数，将return之后的数据返回到函数调用的地方。  这里的return后面没有函数，所以相当于强制结束。
+                
+            }
+       
+
+            //计算圆心坐标
+            //由于绘制时是按照0,0开始计算的，因此计算的坐标需要加一。
+            let a = (x+1) * gridSize-15;  //a表示x轴方向的坐标
+            let b = (y+1) * gridSize-15;  //b表示y轴方向的坐标
+            ctx.beginPath();
+            ctx.arc(a,b,15,0,Math.PI*2); //起始弧度为零，终止弧度为PI,*2就是一个圆。0是开始绘制的角度，PI*2是结束绘制的角度
+            // ctx.stroke(); // 描边。
+            //创建一个设置渐变的梯度
+            //createRadialGradient(x1,y1,r1,x2,y2.r2);
+            //x1,y1:第一个圆的圆心坐标  r1:第一个圆的半径
+            //x2,y2:第二个圆的圆心坐标  r2:第二个圆的半径
+            let gradient = ctx.createRadialGradient(a,b,15,a,b,0);      //渐变色 ，创建径向梯度。 gradient是变量 ，按梯度来选定颜色。圆的话从内到外或从外到内
+            // gradient.addColorStop(); // 添加渐变颜色
+            if(isWho){
+                // ctx.fillStyle = "#000";  //黑棋落子
+                // 黑棋渐变
+                gradient.addColorStop(0,'#333'); // 添加渐变颜色 黑色
+                gradient.addColorStop(1,'#ccc'); //白灰
+                //如果落黑棋
+                checkerboard[y][x] = 1;       //1：表示黑棋落子
+                //遍历这个坐标的所有赢法
+                for(let k = 0; k < count; k++){
+                    if(wins[y][x][k]){          //如果当前坐标是相关的一种赢法
+                        //当前玩家的赢法数加一
+                        playerWins[k] ++;
+                        //将此赢法相关电脑胜利条件为无法达成
+                        computerWins[k] = 6;      //5颗棋子数为胜利，没有等于6的情况
+                        if(playerWins[k] === 5){
+                            alert("黑棋胜利");
+                            game_over = true;       //设置游戏结束
+                        }
+                    }
+
+                }
+            }else{
+                // ctx.fillStyle = "#fff";  //白棋落子
+                // 白棋渐变
+                gradient.addColorStop(0,'#999'); //灰色
+                gradient.addColorStop(1,'#fff'); //白色
+                //如果落白棋
+                checkerboard[y][x] = 2;       //2：表示白棋落子
+                //遍历这个坐标的所有赢法
+                for(let k = 0; k < count; k++){
+                    if(wins[y][x][k]){          //如果当前坐标是相关的一种赢法
+                        //当前电脑的赢法数加一
+                        computerWins[k] ++;
+                        //将此赢法相关玩家胜利条件为无法达成
+                        playerWins[k] = 6;      //5颗棋子数为胜利，没有等于6的情况
+                        if(computerWins[k] === 5){
+                            alert("白棋胜利");
+                            game_over = true;       //设置游戏结束
+                        }
+                    }
+
+                }
+ 
+            }
+            //将渐变颜色设置为样式
+            ctx.fillStyle=gradient;
+            ctx.fill(); // 填充。
+            if(game_over = false){
+                return;
+            }
+            isWho = !isWho; // ! 是取反的意思，黑变白，白变黑。   切换落子方（变更下一次该谁落子）
+
+        }
+        //drawChess(5,2); //在第五行第二列的地方落子。
+
+        //添加点击事件
+        myCanvas.onclick = function(e){ //e 表示鼠标点击位置
+
+            //获取当前点击后鼠标的坐标 - 此坐标是相对于画布的坐标
+            let coord_x = e.offsetX; //拿到 x 的坐标,coord是坐标的单词
+            let coord_y = e.offsetY; //拿到 y 的坐标
+            //将坐标转为行列
+            let x = parseInt(coord_x / gridSize);  // 将计算结果的小数部分去掉，仅保留整数部分。
+            let y = parseInt(coord_y / gridSize);
+            // let x = Math.round(coord_x / gridSize);
+            // let y = Math.round(coord_y / gridSize);
+            drawChess(y,x);
+            //电脑落子
+            AI();
+
+
+        };
+        //问题一：在什么地方完成了坐标四舍五入操作
+        //parseInt()方法。 因为canvas多出棋盘15像素。整数点在小方格每边的中点。 1以内取整无论如何都对应着同一个点。每个点-15到+15对应的坐标除于30取整后得到的坐标必定是上面那个点。
+
+        
+
+        //AI算法
+        function AI(){    //电脑最好方式是记分 分数高就落，分数低就不落
+            //创建变量来统计整个棋盘中没有落子的点的分数
+            let playerScore = [];
+            let computerScore = [];
+            //获取棋盘所有的行
+            for(let row = 0; row < 15; row = row + 1){
+                 //给电脑和玩家都创建15行
+                playerScore[row] = [];             
+                computerScore[row] = [];
+                 //给电脑和玩家每一行都创建15列
+                for(let col = 0; col < 15; col = col + 1){
+                    playerScore[row][col] = 0;                  //设置初始分数为0
+                    computerScore[row][col] = 0;
+
+                }
+            }
+            //创建一个变量来记录最高分：
+            let maxScore = 0;
+            //创建变量来记录最高分的坐标
+            let x = 0;                         //最开始的分数都为0
+            let y = 0;
+
+
+            //统计所有没有落子的点的分数
+            for(let row = 0; row < 15; row = row + 1){
+                for(let col = 0; col < 15; col = col + 1){
+                    if(checkerboard[row][col] === 0){       //判断是否落子，如果这个坐标没有落子
+                        //遍历所有的赢法，查找与这个坐标相关的所有赢法
+                        for(let k = 0; k < count; k = k + 1){
+                            if(wins[row][col][k]){              //如果这是所有赢法中其中一种赢法
+                                //判断玩家在这个赢法上已经落了几颗子了
+                                if(playerWins[k] === 1){                //如果落了一个字就加200分
+                                    playerScore[row][col] += 200;       //分数在原来基础上增加200分，等价于：playerScore[row][col] = playerScore[row][col] + 200 ；
+                                }else if(playerWins[k] === 2){          //如果赢法为2 
+                                    playerScore[row][col] += 400;       //分数增加400分
+                                }else if(playerWins[k] === 3){
+                                    playerScore[row][col] += 1000;      //分数增加1000分
+                                }else if(playerWins[k] === 4){
+                                    playerScore[row][col] += 3000;
+                                }
+
+                                //计算电脑分数
+                                if(computerWins[k] === 1){
+                                    computerScore[row][col] += 200;
+                                }else if(computerWins[k] === 2){
+                                    computerScore[row][col] += 400;
+                                }else if(computerWins[k] === 3){
+                                    computerScore[row][col] += 1000;
+                                }else if(computerWins[k] === 4){
+                                    computerScore[row][col] += 3000;
+                                }
+
+                                //判断当前存储的最大分数是否确实是最大的  ，，简单来说就是两条路有两个子，下了三个子就换路。
+                                if(playerScore[row][col] > maxScore){  //如果玩家当前点分数大于之前存储的最大分数
+                                    //记录坐标
+                                    x = col;
+                                    y = row;
+                                    //更新最大分数
+                                    maxScore = playerScore[row][col];
+
+                                }else if(playerScore[row][col] === maxScore){   //如果玩家当前点分数等于之前存储的最高分
+                                    //判断当前点的电脑分数是否比之前点的电脑分数高 。。。找这个点对我最有利的
+                                    if(computerScore[row][col] > computerScore[y][x]){
+                                        //替换位置
+                                        y = row;
+                                        x = col;
+                                    }
+                                }
+
+                                if(computerScore[row][col] > maxScore){  //如果电脑当前点分数大于之前存储的最大分数
+                                    //记录坐标
+                                    x = col;
+                                    y = row;
+                                    //更新最大分数
+                                    maxScore = computerScore[row][col];
+
+                                }else if(computerScore[row][col] === maxScore){ //如果电脑当前点分数等于之前存储的最大分数
+                                    //判断当前点的玩家分数是否比之前点的玩家分数高、、、、找这个点最有利的
+                                    if(playerScore[row][col] > playerScore[y][x]){
+                                        //替换位置
+                                        y = row;
+                                        x = col;
+                                    }
+                                }
+
+                            }
+                        }
+
+                    }
+                }
+            }
+
+
+            //得到坐标后，进行AI落子
+            drawChess(y,x);
+        }
+
+
+    </script>
+</body>
+</html>
